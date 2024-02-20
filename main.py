@@ -22,11 +22,14 @@ class Gui:
         self.label.pack(padx=10, pady=10)
         self.cap = cv2.VideoCapture(0)
         self.SCROLL_SPEED = 100
+        self.ZOOM_SPEED = 25
         self.HAND_OPEN_THRESHOLD = 0.01
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands()
         self.button = tk.Button(self.root, text="Quit", foreground='white', command=self.quit, background='red', font=('San Francisco', 27))
+        self.button.pack()
+        self.button = tk.Button(self.root, text="Start/Stop", foreground='white', command=self.quit, background='blue', font=('San Francisco', 27))
         self.button.pack()
         self.root.after(10, self.update_frame)
         self.root.mainloop()
@@ -35,18 +38,35 @@ class Gui:
         ret, frame = self.cap.read()
         if not ret:
             return
+        frame = cv2.flip(frame, 1) 
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = self.hands.process(frame_rgb)
         if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                index_finger = hand_landmarks.landmark[self.mp_hands.HandLandmark.INDEX_FINGER_TIP]
-                thumb = hand_landmarks.landmark[self.mp_hands.HandLandmark.THUMB_TIP]
-                distance = (index_finger.x - thumb.x) + (index_finger.y - thumb.y)
-                if distance >= self.HAND_OPEN_THRESHOLD:
-                    pyautogui.scroll(self.SCROLL_SPEED)
-                else:
-                    pyautogui.scroll(-self.SCROLL_SPEED)
-                self.mp_drawing.draw_landmarks(frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
+            for idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
+                handedness = results.multi_handedness[idx].classification[0].label  # 'Left' or 'Right'
+                #print(f'Handedness: {handedness}')  # prints 'Left' or 'Right'
+                if handedness == 'Right':
+                    index_finger = hand_landmarks.landmark[self.mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                    thumb = hand_landmarks.landmark[self.mp_hands.HandLandmark.THUMB_TIP]
+                    distance = (index_finger.x - thumb.x) + (index_finger.y - thumb.y)
+                    if distance >= self.HAND_OPEN_THRESHOLD:
+                        pyautogui.scroll(self.SCROLL_SPEED)
+                    else:
+                        pyautogui.scroll(-self.SCROLL_SPEED)
+                    self.mp_drawing.draw_landmarks(frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
+                elif handedness == 'Left':
+                    index_finger = hand_landmarks.landmark[self.mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                    thumb = hand_landmarks.landmark[self.mp_hands.HandLandmark.THUMB_TIP]
+                    distance = (index_finger.x - thumb.x) + (index_finger.y - thumb.y)
+                    if distance >= self.HAND_OPEN_THRESHOLD:
+                        pyautogui.keyDown('ctrl')
+                        pyautogui.scroll(-self.ZOOM_SPEED)
+                        pyautogui.keyUp('ctrl')
+                    else:
+                        pyautogui.keyDown('ctrl')
+                        pyautogui.scroll(self.ZOOM_SPEED)
+                        pyautogui.keyUp('ctrl')
+                    self.mp_drawing.draw_landmarks(frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=img)
