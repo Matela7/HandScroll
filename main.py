@@ -11,10 +11,12 @@ class Gui:
         self.root = tk.Tk()
         self.root.title("Hand Scroll app")
         self.root.configure(bg="#000000")
-        self.root.geometry("600x1000")
+        self.root.geometry("700x1200")
         self.label = tk.Label(self.root, text="Hand Scroll", font=('San Francisco', 27), foreground='white', background='black')
         self.label.pack(padx=10, pady=10)
-        self.label = tk.Label(self.root, text="Show an open hand to camera to scroll down\n Make a fist and hide a thumb to scroll down", font=('San Francisco', 20), foreground='white', background='black')
+        self.label = tk.Label(self.root, text="Show an open RIGHT hand to camera to scroll down\n Make a RIGHT hand a fist and hide a thumb to scroll down", font=('San Francisco', 20), foreground='white', background='black')
+        self.label.pack(padx=5, pady=5)
+        self.label = tk.Label(self.root, text="Show an open LEFT hand to zoom\n Make a LEFT hand a fist and hide a thumb to zoom-", font=('San Francisco', 20), foreground='white', background='black')
         self.label.pack(padx=5, pady=5)
         self.label = tk.Label(self.root, text="by matela", font=('San Francisco', 15), foreground='white', background='black')
         self.label.place(relx=1, rely=1, anchor='se')
@@ -29,12 +31,33 @@ class Gui:
         self.hands = self.mp_hands.Hands()
         self.button = tk.Button(self.root, text="Quit", foreground='white', command=self.quit, background='red', font=('San Francisco', 27))
         self.button.pack()
-        self.button = tk.Button(self.root, text="Start/Stop", foreground='white', command=self.quit, background='blue', font=('San Francisco', 27))
+        self.is_running = True
+        self.button = tk.Button(self.root, text="Start", foreground='white', command=self.start_stop, background='blue', font=('San Francisco', 27))
+        self.button.pack()
         self.button.pack()
         self.root.after(10, self.update_frame)
-        self.root.mainloop()
+        self.root.mainloop()        
+    def start_stop(self):
+        if self.is_running:
+            self.stop()
+        else:
+            self.start()
+
+    def start(self):
+        self.cap = cv2.VideoCapture(0)
+        self.is_running = True
+        self.button.config(text="Stop")
+        self.update_frame()
+
+    def stop(self):
+        self.is_running = False
+        if self.cap.isOpened():
+            self.cap.release()
+        self.button.config(text="Start")
 
     def update_frame(self):
+        if not self.is_running:
+            return
         ret, frame = self.cap.read()
         if not ret:
             return
